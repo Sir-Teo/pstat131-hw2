@@ -1,6 +1,6 @@
 ---
 title: "Homework 2"
-author: "PSTAT 131/231"
+author: "PSTAT 131/231 Teo Zeng"
 output:
     html_document:
       toc: true
@@ -25,17 +25,46 @@ The full abalone data set is located in the `\data` subdirectory. Read it into *
 
 Make sure you load the `tidyverse` and `tidymodels`!
 
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(tidymodels)
+library(corrplot)
+library(ggthemes)
+tidymodels_prefer()
+
+setwd("~/Desktop/PSTAT 131/pstat131-hw2")
+set.seed(1205)
+```
+
 ### Question 1
 
 Your goal is to predict abalone age, which is calculated as the number of rings plus 1.5. Notice there currently is no `age` variable in the data set. Add `age` to the data set.
 
 Assess and describe the distribution of `age`.
+```{r}
+abalone <- read.csv(file = 'data/abalone.csv')
+abalone %>% head()
+```
+
+```{r}
+abalone["age"] <- abalone["rings"] + 1.5
+ggplot(abalone, aes(x=age)) + geom_histogram(binwidth = 1)
+```
+
+From the histogram we see that $age$ has a left-skewed distribution, and it has its peak at the age of ~11
 
 ### Question 2
 
 Split the abalone data into a training set and a testing set. Use stratified sampling. You should decide on appropriate percentages for splitting the data.
 
 *Remember that you'll need to set a seed at the beginning of the document to reproduce your results.*
+
+```{r}
+abalone_split <- initial_split(abalone, prop = 0.80,strata = age)
+abalone_train <- training(abalone_split)
+abalone_test <- testing(abalone_split)
+```
 
 ### Question 3
 
@@ -44,6 +73,13 @@ Using the **training** data, create a recipe predicting the outcome variable, `a
 Steps for your recipe:
 
 1.  dummy code any categorical predictors
+
+```{r}
+simple_abalone_recipe <-recipe(age ~ ., data = abalone_train)
+simple_abalone_recipe 
+
+abalone_recipe <- recipe(age ~ ., data = abalone_train) %>% step_dummy(all_nominal_predictors())
+```
 
 2.  create interactions between
 
@@ -56,6 +92,18 @@ Steps for your recipe:
 4.  scale all predictors.
 
 You'll need to investigate the `tidymodels` documentation to find the appropriate step functions to use.
+
+```{r}
+int_mod_1 <- abalone_recipe %>% step_interact(terms = ~ type:shucked_weight) %>%
+                                step_center(all_nominal_predictors()) %>%
+                                step_scale(all_nominal_predictors())
+int_mod_2 <- abalone_recipe %>%step_interact(terms = ~ longest_shell:diameter) %>%
+                               step_center(all_nominal_predictors()) %>%
+                               step_scale(all_nominal_predictors())
+int_mod_3 <- abalone_recipe %>%step_interact(terms = ~ shucked_weight:shell_weight) %>%
+                               step_center(all_nominal_predictors())%>%
+                               step_scale(all_nominal_predictors())
+```
 
 ### Question 4
 
