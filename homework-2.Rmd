@@ -61,7 +61,8 @@ Split the abalone data into a training set and a testing set. Use stratified sam
 *Remember that you'll need to set a seed at the beginning of the document to reproduce your results.*
 
 ```{r}
-abalone_split <- initial_split(abalone, prop = 0.80,strata = age)
+abalone2 <- subset(abalone, select = -rings)
+abalone_split <- initial_split(abalone2, prop = 0.80,strata = age)
 abalone_train <- training(abalone_split)
 abalone_test <- testing(abalone_split)
 ```
@@ -75,9 +76,6 @@ Steps for your recipe:
 1.  dummy code any categorical predictors
 
 ```{r}
-simple_abalone_recipe <-recipe(age ~ ., data = abalone_train)
-simple_abalone_recipe 
-
 abalone_recipe <- recipe(age ~ ., data = abalone_train) %>% step_dummy(all_nominal_predictors())
 ```
 
@@ -94,20 +92,21 @@ abalone_recipe <- recipe(age ~ ., data = abalone_train) %>% step_dummy(all_nomin
 You'll need to investigate the `tidymodels` documentation to find the appropriate step functions to use.
 
 ```{r}
-int_mod_1 <- abalone_recipe %>% step_interact(terms = ~ type:shucked_weight) %>%
-                                step_center(all_nominal_predictors()) %>%
-                                step_scale(all_nominal_predictors())
-int_mod_2 <- abalone_recipe %>%step_interact(terms = ~ longest_shell:diameter) %>%
-                               step_center(all_nominal_predictors()) %>%
-                               step_scale(all_nominal_predictors())
-int_mod_3 <- abalone_recipe %>%step_interact(terms = ~ shucked_weight:shell_weight) %>%
-                               step_center(all_nominal_predictors())%>%
-                               step_scale(all_nominal_predictors())
+int_mod <- abalone_recipe %>% 
+           step_interact(terms = ~ starts_with("type"):shucked_weight + 
+                                                       longest_shell:diameter + 
+                                                       shucked_weight:shell_weight) %>%
+           step_center(all_nominal_predictors()) %>%
+           step_scale(all_nominal_predictors())
 ```
 
 ### Question 4
 
 Create and store a linear regression object using the `"lm"` engine.
+
+```{r}
+lm_model <- linear_reg() %>% set_engine("lm")
+```
 
 ### Question 5
 
@@ -117,9 +116,28 @@ Now:
 2.  add the model you created in Question 4, and
 3.  add the recipe that you created in Question 3.
 
+```{r}
+lm_wflow <- workflow() %>%
+  add_model(lm_model) %>%
+  add_recipe(int_mod)
+```
+
 ### Question 6
 
 Use your `fit()` object to predict the age of a hypothetical female abalone with longest_shell = 0.50, diameter = 0.10, height = 0.30, whole_weight = 4, shucked_weight = 1, viscera_weight = 2, shell_weight = 1.
+
+```{r}
+lm_fit <- fit(lm_wflow, abalone_train)
+hypothetical_female <- data.frame(longest_shell = 0.50,
+                                  diameter = 0.10,
+                                  height = 0.30,
+                                  whole_weight = 4,
+                                  shucked_weight = 1,
+                                  viscera_weight = 2,
+                                  shell_weight = 1,
+                                  type = "F")
+predict(lm_fit, hypothetical_female)
+```
 
 ### Question 7
 
@@ -128,6 +146,10 @@ Now you want to assess your model's performance. To do this, use the `yardstick`
 1.  Create a metric set that includes *R^2^*, RMSE (root mean squared error), and MAE (mean absolute error).
 2.  Use `predict()` and `bind_cols()` to create a tibble of your model's predicted values from the **training data** along with the actual observed ages (these are needed to assess your model's performance).
 3.  Finally, apply your metric set to the tibble, report the results, and interpret the *R^2^* value.
+
+```{r}
+
+```
 
 ### Required for 231 Students
 
