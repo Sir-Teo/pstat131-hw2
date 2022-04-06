@@ -31,6 +31,7 @@ library(tidyverse)
 library(tidymodels)
 library(corrplot)
 library(ggthemes)
+library(yardstick)
 tidymodels_prefer()
 
 setwd("~/Desktop/PSTAT 131/pstat131-hw2")
@@ -148,7 +149,21 @@ Now you want to assess your model's performance. To do this, use the `yardstick`
 3.  Finally, apply your metric set to the tibble, report the results, and interpret the *R^2^* value.
 
 ```{r}
+abalone_train_res <- predict(lm_fit, new_data = abalone_train %>% select(-age))
+abalone_train_res <- bind_cols(abalone_train_res, abalone_train %>% select(age))
+rmse(abalone_train_res, truth = age, estimate = .pred)
+abalone_metrics <- metric_set(rmse, rsq, mae)
+abalone_metrics(abalone_train_res, truth = age,
+                estimate = .pred)
+```
 
+```{r}
+abalone_train_res %>% 
+  ggplot(aes(x = .pred, y = age)) +
+  geom_point(alpha = 0.2) +
+  geom_abline(lty = 2) + 
+  theme_bw() +
+  coord_obs_pred()
 ```
 
 ### Required for 231 Students
@@ -169,9 +184,19 @@ where the underlying model $Y=f(X)+\epsilon$ satisfies the following:
 
 Which term(s) in the bias-variance tradeoff above represent the reproducible error? Which term(s) represent the irreducible error?
 
+the **reducible error** terms are $[Bias(\hat{f}(x_0))]^2$ and $Var(\hat{f}(x_0))$, and the **irreducible error** is $Var(\epsilon)$
+
 #### Question 9
 
 Using the bias-variance tradeoff above, demonstrate that the expected test error is always at least as large as the irreducible error.
+
+with the formula above, we have
+
+$$
+E[(y_0 - \hat{f}(x_0))^2]=\underbrace{Var(\hat{f}(x_0))}_{\geq 0}+\underbrace{[Bias(\hat{f}(x_0))]^2}_{\geq 0}+Var(\epsilon)
+$$
+
+so we have the expected test error is always at least as large as the irreducible error.
 
 #### Question 10
 
@@ -181,3 +206,34 @@ Hints:
 
 - use the definition of $Bias(\hat{f}(x_0))=E[\hat{f}(x_0)]-f(x_0)$;
 - reorganize terms in the expected test error by adding and subtracting $E[\hat{f}(x_0)]$
+
+First, recall that, by definition, for any random variable $X$, we have
+$$
+\operatorname{Var}[X]=\mathrm{E}\left[X^{2}\right]-\mathrm{E}[X]^{2} .
+$$
+Rearranging, we get:
+$$
+\mathrm{E}\left[X^{2}\right]=\operatorname{Var}[X]+\mathrm{E}[X]^{2}
+$$
+Since $f$ is deterministic,
+$$
+\mathrm{E}[f]=f .
+$$
+Thus, given $y=f+\varepsilon$ and $\mathrm{E}[\varepsilon]=0$ (because $\varepsilon$ is noise), implies $\mathrm{E}[y]=\mathrm{E}[f+\varepsilon]=\mathrm{E}[f]=f$.
+Also, since $\operatorname{Var}[\varepsilon]=\sigma^{2}$,
+$$
+\operatorname{Var}[y]=\mathrm{E}\left[(y-\mathrm{E}[y])^{2}\right]=\mathrm{E}\left[(y-f)^{2}\right]=\mathrm{E}\left[(f+\varepsilon-f)^{2}\right]=\mathrm{E}\left[\varepsilon^{2}\right]=\operatorname{Var}[\varepsilon]+\mathrm{E}[\varepsilon]^{2}=\sigma^{2}+0^{2}=\sigma^{2}
+$$
+Thus, since $\varepsilon$ and $\hat{f}$ are independent, we can write
+$$
+\begin{aligned}
+\mathrm{E}\left[(y-\hat{f})^{2}\right] &=\mathrm{E}\left[(f+\varepsilon-\hat{f})^{2}\right] \\
+&=\mathrm{E}\left[(f+\varepsilon-\hat{f}+\mathrm{E}[\hat{f}]-\mathrm{E}[\hat{f}])^{2}\right] \\
+&=\mathrm{E}\left[(f-\mathrm{E}[\hat{f}])^{2}\right]+\mathrm{E}\left[\varepsilon^{2}\right]+\mathrm{E}\left[(\mathrm{E}[\hat{f}]-\hat{f})^{2}\right]+2 \mathrm{E}[(f-\mathrm{E}[\hat{f}]) \varepsilon]+2 \mathrm{E}[\varepsilon(\mathrm{E}[\hat{f}]-\hat{f})]+2 \mathrm{E}[(\mathrm{E}[\hat{f}]-\hat{f})(f-\mathrm{E}[\hat{f}])] \\
+&=(f-\mathrm{E}[\hat{f}])^{2}+\mathrm{E}\left[\varepsilon^{2}\right]+\mathrm{E}\left[(\mathrm{E}[\hat{f}]-\hat{f})^{2}\right]+2(f-\mathrm{E}[\hat{f}]) \mathrm{E}[\varepsilon]+2 \mathrm{E}[\varepsilon] \mathrm{E}[\mathrm{E}[\hat{f}]-\hat{f}]+2 \mathrm{E}[\mathrm{E}[\hat{f}]-\hat{f}](f-\mathrm{E}[\hat{f}]) \\
+&=(f-\mathrm{E}[\hat{f}])^{2}+\mathrm{E}\left[\varepsilon^{2}\right]+\mathrm{E}\left[(\mathrm{E}[\hat{f}]-\hat{f})^{2}\right] \\
+&=(f-\mathrm{E}[\hat{f}])^{2}+\operatorname{Var}[\varepsilon]+\operatorname{Var}[\hat{f}] \\
+&=\operatorname{Bias}[\hat{f}]^{2}+\operatorname{Var}[\varepsilon]+\operatorname{Var}[\hat{f}] \\
+&=\operatorname{Bias}[\hat{f}]^{2}+\sigma^{2}+\operatorname{Var}[\hat{f}]
+\end{aligned}
+$$
