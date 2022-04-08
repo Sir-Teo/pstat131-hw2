@@ -35,7 +35,7 @@ library(yardstick)
 tidymodels_prefer()
 
 setwd("~/Desktop/PSTAT 131/pstat131-hw2")
-set.seed(1205)
+set.seed(125)
 ```
 
 ### Question 1
@@ -66,6 +66,7 @@ abalone2 <- subset(abalone, select = -rings)
 abalone_split <- initial_split(abalone2, prop = 0.80,strata = age)
 abalone_train <- training(abalone_split)
 abalone_test <- testing(abalone_split)
+
 ```
 
 ### Question 3
@@ -94,11 +95,11 @@ You'll need to investigate the `tidymodels` documentation to find the appropriat
 
 ```{r}
 int_mod <- abalone_recipe %>% 
-           step_interact(terms = ~ starts_with("type"):shucked_weight + 
+           step_interact(terms = ~ starts_with("type"):shucked_weight +
                                                        longest_shell:diameter + 
                                                        shucked_weight:shell_weight) %>%
-           step_center(all_nominal_predictors()) %>%
-           step_scale(all_nominal_predictors())
+           step_center(all_predictors()) %>%
+           step_scale(all_predictors())
 ```
 
 ### Question 4
