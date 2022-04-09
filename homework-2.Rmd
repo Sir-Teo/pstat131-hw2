@@ -73,6 +73,8 @@ abalone_test <- testing(abalone_split)
 
 Using the **training** data, create a recipe predicting the outcome variable, `age`, with all other predictor variables. Note that you should not include `rings` to predict `age`. Explain why you shouldn't use `rings` to predict `age`.
 
+we should not use rings to predict age because age is dependent on rings (rings + 1.5 = age). If rings is included, then age can be 100 percent explained by rings.
+
 Steps for your recipe:
 
 1.  dummy code any categorical predictors
@@ -166,6 +168,8 @@ abalone_train_res %>%
   theme_bw() +
   coord_obs_pred()
 ```
+
+Evaluated on the test data, our model performs moderately based on the R-squared criterion. At an R-squared of about .556, we have that $55.6 \%$ of the variability in the response is explained by the predictors, which is a moderate correlation. We have a RMSE of $2.12$ and MAE of 1.52, which are both small and acceptable. So this model can make relatively good prediction on age.
 
 ### Required for 231 Students
 
